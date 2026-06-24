@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volleyball Athlete Performance Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Base typography and smooth scrolling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f4; /* stone-100 */
+            color: #292524; /* stone-800 */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Strict Chart Container Styling as per requirements */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; /* Constrain max width */
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; /* Base height */
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        /* Custom scrollbar for content areas */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f5f5f4;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #d6d3d1;
+            border-radius: 10px;
+        }
+
+        /* Hide sections by default */
+        .app-section {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .app-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Unicode icon styling */
+        .u-icon {
+            font-size: 1.25rem;
+            line-height: 1;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden selection:bg-stone-300">
+
+    <!-- Chosen Palette: Warm Neutrals & Muted Teal (Stone & Teal Tailwind Colors) -->
+    <!-- Application Structure Plan: A dashboard layout with a sidebar navigation. This structure was chosen because an athlete needs daily, structured guidance. Separate views for 'Overview' (macro tracking), 'Workout' (daily details), 'Diet' (meal prep), and 'Recovery' (utilizing gym facilities) make the complex plan easily digestible and actionable on a daily basis. -->
+    <!-- Visualization & Content Choices: 
+        1. Weekly Load (Bar Chart): Shows the training intensity peaking mid-week and tapering off for the match. Crucial for understanding periodization.
+        2. Macro Breakdown (Doughnut Chart): Visualizes the diet composition to ensure enough carbs for energy and protein for recovery.
+        3. Muscle Focus (Radar Chart): Shows the balance between power, strength, and mobility to ensure no area is neglected.
+        Libraries: Chart.js for all data viz. NO SVG or Mermaid used. Unicode characters act as icons.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-64 bg-stone-900 text-stone-100 flex flex-col hidden md:flex transition-all duration-300">
+        <div class="p-6 border-b border-stone-800">
+            <h1 class="text-xl font-bold tracking-tight">Volley<span class="text-teal-400">Pro</span> Plan</h1>
+            <p class="text-xs text-stone-400 mt-1">Power • Mobility • Recovery</p>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="navigate('overview')" id="nav-overview" class="nav-btn w-full flex items-center p-3 rounded-lg bg-teal-800 text-white font-medium transition-colors">
+                <span class="u-icon">&#128202;</span> Overview
+            </button>
+            <button onclick="navigate('workout')" id="nav-workout" class="nav-btn w-full flex items-center p-3 rounded-lg hover:bg-stone-800 text-stone-300 font-medium transition-colors">
+                <span class="u-icon">&#127947;</span> Workouts
+            </button>
+            <button onclick="navigate('diet')" id="nav-diet" class="nav-btn w-full flex items-center p-3 rounded-lg hover:bg-stone-800 text-stone-300 font-medium transition-colors">
+                <span class="u-icon">&#127858;</span> Diet & Prep
+            </button>
+            <button onclick="navigate('recovery')" id="nav-recovery" class="nav-btn w-full flex items-center p-3 rounded-lg hover:bg-stone-800 text-stone-300 font-medium transition-colors">
+                <span class="u-icon">&#127754;</span> Recovery Protocols
+            </button>
+        </nav>
+        <div class="p-4 border-t border-stone-800 text-xs text-stone-500">
+            Next Match: Day 7
+        </div>
+    </aside>
+
+    <!-- Mobile Header & Nav -->
+    <div class="md:hidden fixed top-0 left-0 right-0 bg-stone-900 text-white z-50">
+        <div class="flex justify-between items-center p-4">
+            <h1 class="text-lg font-bold">Volley<span class="text-teal-400">Pro</span></h1>
+            <button onclick="toggleMobileMenu()" class="p-2 bg-stone-800 rounded">
+                <span class="u-icon m-0">&#9776;</span>
+            </button>
+        </div>
+        <div id="mobile-menu" class="hidden flex-col p-2 space-y-1 border-t border-stone-800">
+            <button onclick="navigate('overview'); toggleMobileMenu()" class="nav-btn-mob text-left p-3 rounded bg-teal-800 text-white"><span class="u-icon">&#128202;</span> Overview</button>
+            <button onclick="navigate('workout'); toggleMobileMenu()" class="nav-btn-mob text-left p-3 rounded text-stone-300"><span class="u-icon">&#127947;</span> Workouts</button>
+            <button onclick="navigate('diet'); toggleMobileMenu()" class="nav-btn-mob text-left p-3 rounded text-stone-300"><span class="u-icon">&#127858;</span> Diet</button>
+            <button onclick="navigate('recovery'); toggleMobileMenu()" class="nav-btn-mob text-left p-3 rounded text-stone-300"><span class="u-icon">&#127754;</span> Recovery</button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-y-auto custom-scrollbar pt-16 md:pt-0 pb-10">
+        
+        <!-- SECTION: OVERVIEW -->
+        <div id="sec-overview" class="app-section active p-6 max-w-6xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-stone-800">Training Overview</h2>
+                <p class="text-stone-600 mt-2">Welcome to your specialized 7-day microcycle. This dashboard provides your workout periodization, tailored diet adapting to Portuguese economy, and recovery protocols utilizing your gym's aquatic facilities. The goal: Maximize vertical power, bulletproof your joints, and peak for Day 7.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Intensity Chart Card -->
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                    <h3 class="text-lg font-semibold text-stone-800 mb-2 border-b border-stone-100 pb-2">Weekly Load & Intensity</h3>
+                    <p class="text-sm text-stone-500 mb-4">Visualizing the periodization. Notice the high intensity early in the week, active recovery mid-week, and tapering off to peak for the match.</p>
+                    <div class="chart-container">
+                        <canvas id="intensityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Focus Radar Chart Card -->
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                    <h3 class="text-lg font-semibold text-stone-800 mb-2 border-b border-stone-100 pb-2">Training Focus Distribution</h3>
+                    <p class="text-sm text-stone-500 mb-4">Balancing your athletic needs: Power for jumping, Strength for force production, and Mobility/Prehab for joint health.</p>
+                    <div class="chart-container">
+                        <canvas id="focusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-teal-50 border-l-4 border-teal-500 p-4 rounded-r-lg">
+                <h4 class="font-bold text-teal-800 flex items-center"><span class="u-icon">&#128161;</span> Core Philosophy</h4>
+                <p class="text-teal-900 text-sm mt-1">To jump higher and prevent injury, we aren't just doing leg presses. We focus on <strong>rate of force development</strong> (plyometrics), <strong>structural integrity</strong> (tendon health via specific joint loading), and <strong>strategic recovery</strong> using your access to water therapies.</p>
+            </div>
+        </div>
+
+        <!-- SECTION: WORKOUT PLAN -->
+        <div id="sec-workout" class="app-section p-6 max-w-6xl mx-auto">
+             <div class="mb-6">
+                <h2 class="text-3xl font-bold text-stone-800">5-Day Workout Protocol</h2>
+                <p class="text-stone-600 mt-2">Select a day below to view the detailed routine. Hover over the thumbnails to see a larger visual cue.</p>
+            </div>
+
+            <!-- Day Selector -->
+            <div class="flex overflow-x-auto space-x-2 pb-4 mb-6 custom-scrollbar">
+                <button onclick="renderWorkoutDay(1)" id="btn-day-1" class="day-btn flex-shrink-0 px-4 py-2 rounded-full bg-teal-600 text-white font-medium shadow-sm">Day 1<br><span class="text-xs font-normal opacity-80">Strength Base</span></button>
+                <button onclick="renderWorkoutDay(2)" id="btn-day-2" class="day-btn flex-shrink-0 px-4 py-2 rounded-full bg-white text-stone-600 border border-stone-300 font-medium hover:bg-stone-50">Day 2<br><span class="text-xs font-normal opacity-80">Power, Plyo & Arms</span></button>
+                <button onclick="renderWorkoutDay(3)" id="btn-day-3" class="day-btn flex-shrink-0 px-4 py-2 rounded-full bg-white text-stone-600 border border-stone-300 font-medium hover:bg-stone-50">Day 3<br><span class="text-xs font-normal opacity-80">Active Recovery</span></button>
+                <button onclick="renderWorkoutDay(4)" id="btn-day-4" class="day-btn flex-shrink-0 px-4 py-2 rounded-full bg-white text-stone-600 border border-stone-300 font-medium hover:bg-stone-50">Day 4<br><span class="text-xs font-normal opacity-80">Speed & Upper</span></button>
+                <button onclick="renderWorkoutDay(5)" id="btn-day-5" class="day-btn flex-shrink-0 px-4 py-2 rounded-full bg-white text-stone-600 border border-stone-300 font-medium hover:bg-stone-50">Day 5<br><span class="text-xs font-normal opacity-80">Prehab & Core</span></button>
+                 <button class="flex-shrink-0 px-4 py-2 rounded-full bg-stone-200 text-stone-400 cursor-not-allowed">Day 6<br><span class="text-xs">Rest / Stretch</span></button>
+                  <button class="flex-shrink-0 px-4 py-2 rounded-full bg-red-100 text-red-600 border border-red-200 cursor-not-allowed">Day 7<br><span class="text-xs font-bold">MATCH DAY</span></button>
+            </div>
+
+            <!-- Workout Content Area -->
+            <div id="workout-content" class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                <!-- Content injected via JS -->
+            </div>
+        </div>
+
+        <!-- SECTION: DIET & PREP -->
+        <div id="sec-diet" class="app-section p-6 max-w-6xl mx-auto">
+             <div class="mb-6">
+                <h2 class="text-3xl font-bold text-stone-800">Nutrition & Budget Prep</h2>
+                <p class="text-stone-600 mt-2">Adapted for Portugal's economic reality. High protein, adequate carbs for explosive energy, utilizing accessible staples from local supermarkets (Pingo Doce, Lidl, Mercadona).</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Macro Chart -->
+                <div class="col-span-1 bg-white rounded-xl shadow-sm border border-stone-200 p-6 flex flex-col items-center">
+                    <h3 class="text-lg font-semibold text-stone-800 mb-2 w-full text-left">Target Macros</h3>
+                    <div class="chart-container w-full h-48 md:h-64">
+                        <canvas id="macroChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-sm text-stone-600 space-y-1 w-full">
+                        <p>&#127836; <strong>Carbs:</strong> Fuel for jumping & stamina.</p>
+                        <p>&#127831; <strong>Protein:</strong> Muscle repair. Supplements help.</p>
+                        <p>&#129361; <strong>Fats:</strong> Hormonal health & joints.</p>
+                    </div>
+                </div>
+
+                <!-- Meal Plan -->
+                <div class="col-span-1 md:col-span-2 bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                    <h3 class="text-xl font-bold text-stone-800 mb-4 border-b border-stone-100 pb-2">Daily Blueprint</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="p-3 bg-stone-50 rounded-lg">
+                            <h4 class="font-bold text-teal-700">&#9749; Breakfast (Pre-Training/Work)</h4>
+                            <p class="text-sm text-stone-700 mt-1"><strong>Oatmeal Pro:</strong> Aveia (Oats) mixed with 1 scoop Whey Protein, water or milk, and a handful of peanuts (amendoins - cheap fat source) or banana.</p>
+                        </div>
+                        
+                        <div class="p-3 bg-stone-50 rounded-lg">
+                            <h4 class="font-bold text-teal-700">&#127860; Lunch (Current Habit Optimized)</h4>
+                            <p class="text-sm text-stone-700 mt-1"><strong>Power Pasta:</strong> Pasta with Chicken Breast (Frango). <em>Optimization:</em> Add broccoli or spinach (espinafres) for micronutrients. Cook with a drizzle of Olive Oil (Azeite).</p>
+                        </div>
+
+                        <div class="p-3 bg-stone-50 rounded-lg border-l-4 border-yellow-400">
+                            <h4 class="font-bold text-yellow-700">&#9889; Pre/Post Workout Snack</h4>
+                            <p class="text-sm text-stone-700 mt-1">Pre: 1 Banana + Creatine (mixed in water).<br>Post: Skyr or Greek Yogurt (cheapest at Lidl/Aldi) or 2 Boiled Eggs (Ovos cozidos).</p>
+                        </div>
+
+                        <div class="p-3 bg-stone-50 rounded-lg">
+                            <h4 class="font-bold text-teal-700">&#127858; Dinner (Current Habit Optimized)</h4>
+                            <p class="text-sm text-stone-700 mt-1"><strong>Recovery Fish:</strong> Fish + Sweet Potato (Batata doce). <em>Budget Alternations:</em> Alternate fresh fish with Canned Tuna in water (Atum) or frozen Hake/Cod (Pescada/Bacalhau). Add carrots/cabbage.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                 <h3 class="text-lg font-semibold text-stone-800 mb-2 border-b border-stone-100 pb-2">Portuguese Budget Shopping List</h3>
+                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-4">
+                    <ul class="space-y-1 text-stone-600 list-disc list-inside">
+                        <li class="font-bold text-stone-800">Carbs</li>
+                        <li>Arroz agulha/vaporizado</li>
+                        <li>Massa (Macarrão/Esparguete)</li>
+                        <li>Batata Doce</li>
+                        <li>Flocos de Aveia</li>
+                    </ul>
+                    <ul class="space-y-1 text-stone-600 list-disc list-inside">
+                        <li class="font-bold text-stone-800">Proteins</li>
+                        <li>Peito de Frango (Promoções)</li>
+                        <li>Ovos (M ou L)</li>
+                        <li>Atum ao natural</li>
+                        <li>Lentilhas/Grão de bico</li>
+                    </ul>
+                    <ul class="space-y-1 text-stone-600 list-disc list-inside">
+                        <li class="font-bold text-stone-800">Fats & Veggies</li>
+                        <li>Azeite Virgem Extra</li>
+                        <li>Amendoins (sem sal)</li>
+                        <li>Cenouras, Cebolas, Alho</li>
+                        <li>Brócolos/Espinafres congelados</li>
+                    </ul>
+                     <ul class="space-y-1 text-stone-600 list-disc list-inside">
+                        <li class="font-bold text-stone-800">Supplements</li>
+                        <li>Whey Protein (Maintain)</li>
+                        <li>Creatina (5g daily)</li>
+                    </ul>
+                 </div>
+            </div>
+        </div>
+
+        <!-- SECTION: RECOVERY & FACILITIES -->
+        <div id="sec-recovery" class="app-section p-6 max-w-6xl mx-auto">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold text-stone-800">Recovery & Facilities Protocol</h2>
+                <p class="text-stone-600 mt-2">You have access to premium facilities. Using them correctly is the difference between chronic joint pain and increasing your vertical jump pain-free.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Pool Protocols -->
+                <div class="bg-blue-50 rounded-xl p-6 border border-blue-100">
+                    <h3 class="text-xl font-bold text-blue-800 mb-4 flex items-center"><span class="u-icon text-blue-500">&#127754;</span> Aquatic Therapy (Day 3 & Day 6)</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <h4 class="font-bold text-stone-800">1. Active Recovery Swim</h4>
+                            <p class="text-sm text-stone-600 mt-1"><strong>Action:</strong> 15-20 minutes of light freestyle swimming.<br><strong>Why:</strong> Decompresses the spine, flushes lactic acid, provides zero-impact cardiovascular work.</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <h4 class="font-bold text-stone-800">2. Underwater Resistance</h4>
+                            <p class="text-sm text-stone-600 mt-1"><strong>Action:</strong> High knees, lateral shuffles, and backward walking in chest-deep water (10 mins).<br><strong>Why:</strong> Builds functional strength and mobility in hips/knees without eccentric loading (joint wear).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thermal Protocols -->
+                <div class="space-y-6">
+                    <div class="bg-orange-50 rounded-xl p-6 border border-orange-100">
+                        <h3 class="text-xl font-bold text-orange-800 mb-4 flex items-center"><span class="u-icon text-orange-500">&#127777;</span> Sauna Protocol</h3>
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <p class="text-sm text-stone-600"><strong>Action:</strong> Post-workout, 10-15 minutes max. Hydrate heavily before and after.<br><strong>Why:</strong> Increases blood plasma volume (endurance), releases heat shock proteins (recovery), and relaxes hyper-tonic muscles (especially calves and lower back).</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-cyan-50 rounded-xl p-6 border border-cyan-100">
+                        <h3 class="text-xl font-bold text-cyan-800 mb-4 flex items-center"><span class="u-icon text-cyan-500">&#128670;</span> Jacuzzi & Jets</h3>
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <p class="text-sm text-stone-600"><strong>Action:</strong> 10 mins. Target underwater jets specifically on: Patellar tendon (below knee), Achilles tendon, and lower back.<br><strong>Why:</strong> Mechanical massage promotes localized blood flow to avascular areas (tendons), speeding up tissue repair from jumping.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+             <div class="mt-8 bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                <h3 class="text-xl font-bold text-stone-800 mb-4 border-b border-stone-100 pb-2">Mandatory Daily Mobility (Pre/Post Workout)</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="p-3 border border-stone-100 rounded">
+                        <h4 class="font-bold text-stone-700">Ankle Dorsiflexion</h4>
+                        <p class="text-xs text-stone-500 mt-1">Knee-to-wall stretch. Crucial for landing mechanics and preventing knee pain. 2x60s per leg.</p>
+                    </div>
+                    <div class="p-3 border border-stone-100 rounded">
+                        <h4 class="font-bold text-stone-700">Hip Flexor / Couch Stretch</h4>
+                        <p class="text-xs text-stone-500 mt-1">Opens tight hips from jumping/sitting. Allows glutes to fire properly for max vertical. 2x60s per leg.</p>
+                    </div>
+                    <div class="p-3 border border-stone-100 rounded">
+                        <h4 class="font-bold text-stone-700">Thoracic Extension</h4>
+                        <p class="text-xs text-stone-500 mt-1">Foam roller upper back. Prevents shoulder impingement during spiking/blocking. 2 mins.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Data Storage ---
+        const workoutData = {
+            1: {
+                title: "Day 1: Heavy Lower Body & Core Base",
+                focus: "Building absolute strength to increase the force potential of your muscles.",
+                exercises: [
+                    { visual: "https://images.ctfassets.net/3s5io6mnxfqz/34Npc5PKLKJi6HIYvFw9XI/3e45754912cf266e7401cb8074c63239/AdobeStock_386146138_2.jpeg", name: "Barbell Back Squat", sets: "4", reps: "5", rest: "3 min", notes: "Focus on depth and exploding up." },
+                    { visual: "https://static.tildacdn.com/tild6663-3235-4834-b639-393439373933/7335e5db-77ef-46c4-b.jpg", name: "Romanian Deadlift (RDL)", sets: "3", reps: "8", rest: "2 min", notes: "Hamstring strength protects the ACL." },
+                    { visual: "https://miro.medium.com/1*gE3ZNrgqQUQTc31mQC1lmg.jpeg", name: "ATG Split Squat", sets: "3", reps: "8/leg", rest: "90 sec", notes: "Bodyweight or light dumbbells. Bulletproofs the patellar tendon." },
+                    { visual: "https://d2rf5xu5rxzcu4.cloudfront.net/img/exercises/incline-dumbbell-press/hero.jpg", name: "Incline Dumbbell Press", sets: "3", reps: "8-10", rest: "90 sec", notes: "Builds upper chest for a strong frame and blocking stability." },
+                    { visual: "https://titan.fitness/cdn/shop/files/401473_02.jpg?v=1779301565&width=1445", name: "Seated Calf Raises", sets: "4", reps: "15", rest: "60 sec", notes: "Strengthens the soleus for landing stability." },
+                    { visual: "https://www.soletreadmills.com/cdn/shop/articles/Man_in_athletic_wear_holding_a_forearm_plank_position_on_a_smooth_studio_floor.png?v=1754506706&width=2048", name: "Plank Variations", sets: "3", reps: "60s", rest: "45 sec", notes: "Anti-extension core strength for mid-air stability." }
+                ]
+            },
+            2: {
+                title: "Day 2: Power, Plyometrics & Arms",
+                focus: "Converting strength into explosive rate-of-force development, plus arm definition.",
+                exercises: [
+                    { visual: "https://as2.ftcdn.net/jpg/03/48/00/73/1000_F_348007314_X5zkXWEWumy8XD5WJlpNgQJP80jo1KQP.jpg", name: "Box Jumps", sets: "4", reps: "5", rest: "2 min", notes: "Focus on max height, step down softly. DO NOT jump down." },
+                    { visual: "https://jacktylerperformance.com/wp-content/uploads/2018/10/AB9_2354.jpg", name: "Trap Bar Deadlift", sets: "4", reps: "4", rest: "3 min", notes: "Move weight fast. If form breaks, lower weight." },
+                    { visual: "https://cdn.muscleandstrength.com/sites/default/files/standing-overhead-medicine-ball-throw.jpg", name: "Medicine Ball Overhead Throws", sets: "3", reps: "8", rest: "90 sec", notes: "Simulates spiking motion. Throw against wall." },
+                    { visual: "https://bodybuilding-wizard.com/wp-content/uploads/2014/05/dumbbell-overhead-press.jpg", name: "Dumbbell Push Press", sets: "3", reps: "6", rest: "2 min", notes: "Upper body power for blocking." },
+                    { visual: "https://atletiq.com/content/exercises/1043/male_1.jpg", name: "Triceps Overhead Extension", sets: "3", reps: "12", rest: "60 sec", notes: "Tricep definition and elbow lockout power for hitting." },
+                    { visual: "https://us.myprotein.com/images?url=https://blogscdn.thehut.net/wp-content/uploads/sites/478/2018/01/10161713/700x385_Q1_Blog-11.jpg&format=webp&auto=avif&width=700&height=385&fit=crop", name: "Dumbbell Hammer Curls", sets: "3", reps: "12", rest: "60 sec", notes: "Builds bicep peaks and thicker forearms." },
+                    { visual: "https://i.ytimg.com/vi/XSTcIB2ZpmU/maxresdefault.jpg", name: "Tibialis Raises", sets: "3", reps: "20", rest: "60 sec", notes: "Lean against wall, raise toes. Crucial for deceleration." }
+                ]
+            },
+            3: {
+                title: "Day 3: Active Recovery & Pool",
+                focus: "Flushing the system, reducing inflammation, zero impact.",
+                exercises: [
+                    { visual: "https://www.sportlytech.com/image/how-to-swim-3.webp", name: "Light Swim (Freestyle)", sets: "1", reps: "15 min", rest: "-", notes: "Continuous light pace." },
+                    { visual: "https://fitmotivation.s3.amazonaws.com/Poolfit+Carousel/005-Noodle+Lunges_600x600.jpg", name: "Underwater Walks/Lunges", sets: "3", reps: "1 min", rest: "30 sec", notes: "Chest deep water. Work on hip mobility." },
+                    { visual: "https://www.grand-elysee.com/fileadmin/_processed_/9/b/csm_25_ELY_01_0019_lowres_cadb703858.jpg", name: "Sauna", sets: "1", reps: "10-15 min", rest: "-", notes: "Hydrate heavily." },
+                    { visual: "https://redefiningstrength.com/wp-content/uploads/2015/11/5-stretching-flows1.jpg", name: "Deep Stretching", sets: "1", reps: "20 min", rest: "-", notes: "Focus on hips, calves, and shoulders." }
+                ]
+            },
+            4: {
+                title: "Day 4: Unilateral Strength & Upper Hypertrophy",
+                focus: "Addressing leg imbalances and widening the upper body frame.",
+                exercises: [
+                    { visual: "https://cdn.shopify.com/s/files/1/0802/1508/1237/files/Muscles_Worked_with_Bulgarian_Split_Squats_480x480.webp?v=1717006875", name: "Bulgarian Split Squats", sets: "3", reps: "8/leg", rest: "2 min", notes: "Improves single-leg jump used in approaches." },
+                    { visual: "https://www.docjoints.com/wp-content/uploads/2025/08/Lateral-Skater-jumps.png", name: "Lateral Bounds (Skater Jumps)", sets: "3", reps: "6/leg", rest: "90 sec", notes: "Explosive side-to-side for defense and blocking." },
+                    { visual: "https://www.hamptonfit.com/wp-content/uploads/2024/03/dumbbell-bench-press-1-1024x684.jpg", name: "Flat Dumbbell Bench Press", sets: "3", reps: "8-10", rest: "90 sec", notes: "Thickens the chest and builds pushing strength." },
+                    { visual: "https://i0.wp.com/www.muscleandfitness.com/wp-content/uploads/2024/06/A-strong-male-working-out-his-back-muscles-with-lat-pulldown-variations.jpg?quality=86&strip=all", name: "Pull-ups / Lat Pulldowns", sets: "4", reps: "8-10", rest: "90 sec", notes: "Widens the back (V-Taper); antagonist muscle to spiking." },
+                    { visual: "https://i0.wp.com/www.muscleandfitness.com/wp-content/uploads/2015/12/The-Rock-Dumbbell-Row.jpg?quality=86&strip=all", name: "Single Arm Dumbbell Row", sets: "3", reps: "10/arm", rest: "60 sec", notes: "Upper back thickness." },
+                    { visual: "https://www.gymshark.com/_next/image?url=https%3A%2F%2Fimages.ctfassets.net%2F8urtyqugdt2l%2F4yx2hx2bseOyDZmqFk32za%2Fb177c068d64a4df9f9c305cddcfd9c41%2Fdesktop-lateral-raises.jpg&w=3840&q=85", name: "Dumbbell Lateral Raises", sets: "3", reps: "15", rest: "60 sec", notes: "Caps the shoulders to give a wider, defined frame." },
+                    { visual: "https://whitecoattrainer.com/wp-content/uploads/2019/03/07b79-endingfacepull.jpg", name: "Face Pulls", sets: "3", reps: "15", rest: "60 sec", notes: "Rotator cuff health and rear deltoid definition." }
+                ]
+            },
+            5: {
+                title: "Day 5: Prehab, Core & Agility",
+                focus: "Light dynamic movement, core definition, and fortifying joints.",
+                exercises: [
+                    { visual: "https://i.pinimg.com/736x/77/99/27/779927e035777b703b353cb6393db6d5.jpg", name: "Agility Ladder Drills", sets: "4", reps: "30s", rest: "60 sec", notes: "Fast feet, in-and-outs." },
+                    { visual: "https://svrg.id/cdn/shop/articles/nordic_hamstring_curl_1_11zon-1527299.webp?v=1778465227", name: "Nordic Hamstring Curls", sets: "3", reps: "5 (eccentric)", rest: "2 min", notes: "Lower slowly, use hands to push up. Ultimate hamstring injury prevention." },
+                    { visual: "https://www.trxtraining.com/cdn/shop/articles/resistance-band-squats.jpg?v=1758156641", name: "Banded Lateral Walks", sets: "3", reps: "15/dir", rest: "60 sec", notes: "Glute medius activation for knee alignment." },
+                    { visual: "https://i.ytimg.com/vi/_dxjs1xNVBo/hqdefault.jpg", name: "Weighted Cable Crunches", sets: "3", reps: "15", rest: "60 sec", notes: "Builds blocky, defined abs." },
+                    { visual: "https://www.themanual.com/tachyon/sites/9/2020/12/ab-workout-medicine-ball-russian-twist-e1741878022454.jpg?resize=1200%2C720", name: "Russian Twists", sets: "3", reps: "20", rest: "45 sec", notes: "Rotational core strength and obliques." },
+                    { visual: "https://aquaviaspa.com/img/c/8-category_default.jpg", name: "Jacuzzi Jet Massage", sets: "1", reps: "10 min", rest: "-", notes: "Target knees and achilles." }
+                ]
+            }
+        };
+
+        // --- State Management ---
+        let currentSectionId = 'overview';
+        let chartsInitialized = false;
+
+        // --- Navigation Logic ---
+        function navigate(sectionId) {
+            // Update UI buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-teal-800', 'text-white');
+                btn.classList.add('text-stone-300', 'hover:bg-stone-800');
+            });
+            const desktopBtn = document.getElementById(`nav-${sectionId}`);
+            if(desktopBtn) {
+                desktopBtn.classList.add('bg-teal-800', 'text-white');
+                desktopBtn.classList.remove('text-stone-300', 'hover:bg-stone-800');
+            }
+
+            // Hide all sections, show target
+            document.querySelectorAll('.app-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(`sec-${sectionId}`).classList.add('active');
+
+            // Initialize charts if overview or diet is selected and not yet initialized
+            if (!chartsInitialized && (sectionId === 'overview' || sectionId === 'diet')) {
+                initCharts();
+                chartsInitialized = true;
+            }
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+            menu.classList.toggle('flex');
+        }
+
+        // --- Workout Rendering Logic ---
+        function renderWorkoutDay(dayNumber) {
+            // Update button styles
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.classList.remove('bg-teal-600', 'text-white', 'shadow-sm');
+                btn.classList.add('bg-white', 'text-stone-600', 'hover:bg-stone-50');
+            });
+            const activeBtn = document.getElementById(`btn-day-${dayNumber}`);
+            activeBtn.classList.remove('bg-white', 'text-stone-600', 'hover:bg-stone-50');
+            activeBtn.classList.add('bg-teal-600', 'text-white', 'shadow-sm');
+
+            // Render content
+            const data = workoutData[dayNumber];
+            const container = document.getElementById('workout-content');
+            
+            let html = `
+                <div class="mb-6">
+                    <h3 class="text-2xl font-bold text-stone-800 border-b border-stone-200 pb-2">${data.title}</h3>
+                    <p class="text-teal-700 font-medium mt-2">Focus: ${data.focus}</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-stone-50 text-stone-500 text-sm">
+                                <th class="p-3 border-b border-stone-200 font-semibold rounded-tl-lg w-16">Visual</th>
+                                <th class="p-3 border-b border-stone-200 font-semibold">Exercise</th>
+                                <th class="p-3 border-b border-stone-200 font-semibold">Sets x Reps</th>
+                                <th class="p-3 border-b border-stone-200 font-semibold">Rest</th>
+                                <th class="p-3 border-b border-stone-200 font-semibold rounded-tr-lg">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+            `;
+
+            data.exercises.forEach((ex, index) => {
+                const bgClass = index % 2 === 0 ? 'bg-white' : 'bg-stone-50';
+                html += `
+                    <tr class="${bgClass} hover:bg-teal-50 transition-colors">
+                        <td class="p-2 border-b border-stone-100">
+                            <img src="${ex.visual}" class="w-10 h-10 rounded object-cover border border-stone-200 shadow-sm hover:scale-150 hover:shadow-lg hover:z-10 relative transition-all duration-200 origin-left cursor-help" alt="Visual cue for ${ex.name}" title="Visual cue for ${ex.name}">
+                        </td>
+                        <td class="p-3 border-b border-stone-100 font-medium text-stone-800">${ex.name}</td>
+                        <td class="p-3 border-b border-stone-100 text-stone-600 whitespace-nowrap">${ex.sets} x ${ex.reps}</td>
+                        <td class="p-3 border-b border-stone-100 text-stone-600 whitespace-nowrap">${ex.rest}</td>
+                        <td class="p-3 border-b border-stone-100 text-stone-500">${ex.notes}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+        }
+
+        // --- Chart.js Initialization ---
+        function initCharts() {
+            // Global defaults
+            Chart.defaults.font.family = "'Segoe UI', sans-serif";
+            Chart.defaults.color = '#78716c'; // stone-500
+            
+            // 1. Intensity Line Chart
+            const ctxInt = document.getElementById('intensityChart').getContext('2d');
+            new Chart(ctxInt, {
+                type: 'line',
+                data: {
+                    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7 (Match)'],
+                    datasets: [{
+                        label: 'CNS Load / Intensity',
+                        data: [85, 95, 30, 80, 60, 20, 100],
+                        borderColor: '#0d9488', // teal-600
+                        backgroundColor: 'rgba(13, 148, 136, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#0f766e', // teal-700
+                        pointRadius: 5,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // CRITICAL for filling container
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) { return `Intensity: ${context.parsed.y}%`; }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, display: false }, // Hide Y axis for cleaner look
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 2. Focus Radar Chart
+            const ctxFocus = document.getElementById('focusChart').getContext('2d');
+            new Chart(ctxFocus, {
+                type: 'radar',
+                data: {
+                    labels: ['Power/Plyo', 'Absolute Strength', 'Core Stability', 'Mobility/Prehab', 'Cardio/Endurance'],
+                    datasets: [{
+                        label: 'Current Plan Focus',
+                        data: [90, 80, 75, 85, 40], // High power/prehab, lower pure cardio
+                        backgroundColor: 'rgba(13, 148, 136, 0.2)', // teal
+                        borderColor: '#0d9488',
+                        pointBackgroundColor: '#0f766e',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#e7e5e4' },
+                            grid: { color: '#e7e5e4' },
+                            pointLabels: { font: { size: 11 }, color: '#57534e' },
+                            ticks: { display: false, min: 0, max: 100 }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // 3. Macro Doughnut Chart
+            const ctxMacro = document.getElementById('macroChart').getContext('2d');
+            new Chart(ctxMacro, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Carbohydrates', 'Protein', 'Fats'],
+                    datasets: [{
+                        data: [50, 25, 25], // Classic athlete split
+                        backgroundColor: [
+                            '#0d9488', // teal-600 (Carbs)
+                            '#f59e0b', // amber-500 (Protein)
+                            '#78716c'  // stone-500 (Fats)
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } }
+                    }
+                }
+            });
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial render
+            renderWorkoutDay(1);
+            // Setup charts on load
+            initCharts();
+            chartsInitialized = true;
+        });
+
+    </script>
+</body>
+</html>
